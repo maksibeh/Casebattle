@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>CaseBattle — тест</title>
+<title>QuizBattleCS</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700&family=Unbounded:wght@600&display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:dark;--bg:#050505;--card:#111113;--line:#FF8A1F;--dim:#2C2C30;--text:#F5F5F5;--mute:#9A9AA2;--acc:#FF8A1F;--ok:#4ADE80;--okbg:#0F2A1B;--bad:#FF6B6B;--badbg:#2E1416;
@@ -16,24 +17,28 @@ h1,h2,.big{font-family:Unbounded,Manrope,system-ui,sans-serif;font-weight:600;li
 h1{font-size:24px;margin:8px 0 20px}
 .logo{display:flex;align-items:center;gap:10px;margin:4px 0 22px;font-family:Unbounded,Manrope,system-ui,sans-serif;font-weight:600;font-size:22px;letter-spacing:.5px}
 .logo b{color:var(--acc);font-weight:600}
-h2{font-size:19px;margin:22px 0 18px}
+h2{font-size:19px;margin:22px 0 18px;white-space:pre-line}
 button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-.test{display:flex;justify-content:space-between;align-items:center;width:100%;padding:18px;border:2px solid var(--line);background:var(--card);border-radius:14px;margin-bottom:12px;text-align:left}
-.test b{font-family:Unbounded,Manrope,sans-serif;font-size:18px}
-.test span{color:var(--mute);font-size:14px}
+button:focus-visible,.inp:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.test{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:18px;border:2px solid var(--line);background:var(--card);border-radius:14px;margin-bottom:12px;text-align:left}
+.test b{font-family:Unbounded,Manrope,sans-serif;font-size:17px}
+.test span{color:var(--mute);font-size:14px;white-space:nowrap}
 .top{display:flex;align-items:center;gap:12px}
 .back{border:0;background:var(--card);width:40px;height:40px;border-radius:10px;font-size:20px;flex:none}
-.slots{display:flex;gap:6px;flex:1}
+.slots{display:flex;gap:3px;flex:1}
 .slots i{flex:1;height:8px;border-radius:4px;background:var(--dim)}
 .slots i.cur{background:var(--acc)}
 .slots i.ok{background:var(--ok)}
 .slots i.bad{background:var(--bad)}
+.hint{color:var(--mute);margin:-8px 0 14px;font-size:14px}
 .opts{display:grid;gap:10px}
 .opt{position:relative;width:100%;text-align:left;padding:15px 16px;border:2px solid var(--line);background:var(--card);border-radius:12px;transition:background .15s,border-color .15s}
+.opt.sel{background:#2A1A08}
 .opt.ok{border-color:var(--ok);background:var(--okbg)}
 .opt.bad{border-color:var(--bad);background:var(--badbg)}
 .opt:disabled{cursor:default}
+.inp{width:100%;padding:15px 16px;border:2px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;font:inherit}
+#fb{margin-top:12px}
 .opt.hit{animation:shake .55s ease-in-out,glowok .9s ease-out forwards}
 .opt.bad{animation:glowbad 1.1s ease-out forwards}
 .rays{position:absolute;inset:0;pointer-events:none}
@@ -50,6 +55,16 @@ button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 .miss p{margin:0 0 6px}
 .miss .r{color:var(--ok)}
 .miss .w{color:var(--bad)}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.prof{border:2px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font-weight:700;margin-top:4px}
+.who{color:var(--mute);margin:14px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.stat{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:14px}
+.stat b{display:block;font-family:Unbounded,Manrope,sans-serif;font-size:26px;color:var(--acc)}
+.stat span{color:var(--mute);font-size:13px}
+.sub{font-size:16px;margin:8px 0 10px}
+.row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 10px;background:var(--card);border:2px solid var(--dim);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.row small{width:100%;color:var(--mute)}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}.opt.hit{animation:none;box-shadow:0 0 18px 2px rgba(74,222,128,.45)}.opt.bad{animation:none;box-shadow:0 0 16px 2px rgba(255,107,107,.55)}.rays{display:none}}
 </style>
@@ -58,40 +73,73 @@ button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 <div id="app"></div>
 <script>
 /* ===== ТЕСТЫ =====
-   o — варианты ответа, a — номер верного (0 = первый, 1 = второй и т.д.) */
+   o — варианты, a — номер верного (0 = первый);
+   a: [1,4] — несколько верных; t:'text' + a:'ответ' — вопрос с вводом ответа. */
 const TESTS = [
-  {
-    title: 'CaseBattle',
-    questions: [
-      { q: 'Самый дешёвый скин в кейсе Евро 2020?', o: ['G3SG1 Жало', 'AUG Янтарный градиент', 'P90 Воин дорог', 'XM1014 Времена года'], a: 2 },
-      { q: 'Самый дорогой дроп в кейсе Пила?', o: ['Нож Боуи (ночь)', 'Скелетный нож (кровавая паутина)', 'Glock-18 (Королева пуль)', 'USP-S (Поток информации)'], a: 1 },
-      { q: 'Какой самый дешёвый нож в Сапфировом кейсе?', o: ['Тычковые ножи (чёрный глянец)', 'Кукри (пиксельный камуфляж)', 'Штык-нож (северный лес)', 'Наваха (мраморный градиент)'], a: 0 },
-      { q: 'Сколько стоит кейс Магия?', o: ['69₽', '75₽', '19₽', '99₽'], a: 1 },
-      { q: 'Какой скин самый дорогой в кейсе 007?', o: ['Glock-18 (Нападение Жора)', 'АК-47 (Афродита)', 'USP-S (Извилины)', 'AWP (Гадюка)'], a: 0 },
-      { q: 'Какой кейс стоит 11999₽?', o: ['Фальшион', 'Кукри', 'Охотничий нож', 'Киберпанк'], a: 0 },
-      { q: 'Какой минимальный деп по СБП?', o: ['10₽', '30₽', '50₽', '75₽'], a: 1 },
-      { q: 'На сколько % максимум может попасться промокод на пополнение?', o: ['20%', '15%', '25%', '30%'], a: 2 },
-      { q: 'Сколько минимум скинов нужно для контракта?', o: ['5', '10', '2', '3'], a: 3 },
-      { q: 'Сколько всего видов стрелок в апгрейде?', o: ['5', '4', '3', '2'], a: 0 },
-      { q: 'Сколько типов прокрутки в апгрейде?', o: ['5', '4', '3', '2'], a: 3 },
-      { q: 'Сколько всего кейсов за биткионы?', o: ['8', '10', '12', '9'], a: 1 },
-      { q: 'Сколько стоит самый дорогой кейс за ₽?', o: ['100.000₽', '99.999₽', '10.000₽', '75.000₽'], a: 0 },
-      { q: 'Сколько стоит самый дорогой кейс за биткоины?', o: ['20 биткоинов', '1.000 биткоинов', '10.000 биткоинов', '25.000 биткоинов'], a: 2 }
-    ]
-  }
+  { title: 'CaseBattle', questions: [
+    { q: 'Самый дешёвый скин в кейсе Евро 2020?', o: ['G3SG1 Жало', 'AUG Янтарный градиент', 'P90 Воин дорог', 'XM1014 Времена года'], a: 2 },
+    { q: 'Самый дорогой дроп в кейсе Пила?', o: ['Нож Боуи (ночь)', 'Скелетный нож (кровавая паутина)', 'Glock-18 (Королева пуль)', 'USP-S (Поток информации)'], a: 1 },
+    { q: 'Какой самый дешёвый нож в Сапфировом кейсе?', o: ['Тычковые ножи (чёрный глянец)', 'Кукри (пиксельный камуфляж)', 'Штык-нож (северный лес)', 'Наваха (мраморный градиент)'], a: 0 },
+    { q: 'Сколько стоит кейс Магия?', o: ['69₽', '75₽', '19₽', '99₽'], a: 1 },
+    { q: 'Какой скин самый дорогой в кейсе 007?', o: ['Glock-18 (Нападение Жора)', 'АК-47 (Афродита)', 'USP-S (Извилины)', 'AWP (Гадюка)'], a: 0 },
+    { q: 'Какой кейс стоит 11999₽?', o: ['Фальшион', 'Кукри', 'Охотничий нож', 'Киберпанк'], a: 0 },
+    { q: 'Какой минимальный деп по СБП?', o: ['10₽', '30₽', '50₽', '75₽'], a: 1 },
+    { q: 'На сколько % максимум может попасться промокод на пополнение?', o: ['20%', '15%', '25%', '30%'], a: 2 },
+    { q: 'Сколько минимум скинов нужно для контракта?', o: ['5', '10', '2', '3'], a: 3 },
+    { q: 'Сколько всего видов стрелок в апгрейде?', o: ['5', '4', '3', '2'], a: 0 },
+    { q: 'Сколько типов прокрутки в апгрейде?', o: ['5', '4', '3', '2'], a: 3 },
+    { q: 'Сколько всего кейсов за биткоины?', o: ['8', '10', '12', '9'], a: 1 },
+    { q: 'Сколько стоит самый дорогой кейс за ₽?', o: ['100.000₽', '99.999₽', '10.000₽', '75.000₽'], a: 0 },
+    { q: 'Сколько стоит самый дорогой кейс за биткоины?', o: ['20 биткоинов', '1.000 биткоинов', '10.000 биткоинов', '25.000 биткоинов'], a: 2 },
+    { q: 'Сколько хэллоуинских кейсов?', o: ['6', '7', '5', '4'], a: 2 },
+    { q: 'Цена кейса «Красные скины»?', o: ['185', '300', '189', '149'], a: 0 },
+    { q: 'Какое максимальное кол-во предметов в контракте?', o: ['5', '3', '12', '10'], a: 3 },
+    { q: 'Кейс за 494 рубля?', o: ['Гладиатор', 'Инь и Янь', 'Рубиновый (за рубли)', 'Full-buy раунд'], a: 1 },
+    { q: 'В чём фишка Кейс Баттла?', o: ['Мистические апгрейды', 'Кэшбэк от неудачных апгрейдов', 'Шанс на серию при апгрейде', 'Анимация при крутом дропе', 'Промокоды на пополнение на оригинальном сайте', 'Возможность покупать скины за баланс сайта', 'Отсутствие кейсов на сайте', 'Нету фишек'], a: [1, 4] },
+    { q: 'Сколько всего имидж-кейсов?', o: ['14', '8', '10', '18'], a: 2 },
+    { q: 'Сколько всего кейсов учёных?', o: ['4', '8', '3', '5'], a: 3 },
+    { q: 'Второй по цене кейс в разделе «Фирменные кейсы», не учитывая кейсы от изумрудного до биткоина?', o: ['Перчаточный', 'Фредди Крюгер', 'Евро 2024', 'Смертельное оружие'], a: 1 },
+    { q: 'Какой самый маленький процент апгрейда на Кейс Баттле можно поставить на быстрый подбор?', o: ['30', '10', '1', '20'], a: 2 },
+    { q: 'Какие из этих ограничений верные в установке процента апгрейда в быстром подборе?', o: ['Разница между значениями должна быть не меньше 5%', 'Можно поставить не больше 5 значений, обязательно убрав 2 значения коэффициентов и поставив вместо них процентное', 'Можно поставить лишь числа, оканчивающиеся на 0 или 5 (0 — исключение)', 'Нету верных вариантов'], a: [3] },
+    { q: 'Какой максимальный шанс апгрейда на Кейс Баттле?', o: ['90', '80', '75', 'Ни одно из данных'], a: 1 },
+    { q: 'В какой диапазон попадают номера турниров, проходящие с ноября по декабрь от Кейс Баттла?', o: ['200-240', '1-40', '80-120', '150-160', 'Ни один не подходит'], a: 0 },
+    { q: 'На какой платформе проходят трансляции турниров?', o: ['YouTube', 'OBS Studio', 'Twitch', 'Kick'], a: 2 },
+    { q: 'Сколько стоит самый минимальный дроп на Кейс Баттле?', o: ['2 рубля', '4 рубля', '1 рубль', '5 рублей', 'Ни одно значение не подходит'], a: 2 },
+    { q: 'Тип самого дорогого дропа на Кейс Баттле, который может выпасть из кейсов?', o: ['Нож', 'Перчатки', 'Снайперская винтовка', 'Штурмовая винтовка'], a: 3 },
+    { q: 'Сколько стоит самая дорогая наклейка на Кейс Баттле?', o: ['200-2000 рублей', '400000-600000 рублей', '0-100 рублей', '5000-10000 рублей'], a: 1 },
+    { q: 'Какие из этих ограничений на процентное значение апгрейда верны?', o: ['Все значения должны быть от 1 до 75 процентов', 'Значения не должны повторяться', 'Значения должны идти в порядке возрастания слева направо', 'Ни одно из значений не подходит'], a: [0, 1, 2] },
+    { q: 'Сколько всего кейсов посвящено мажорам на Кейс Баттле?', o: ['4', '3', '5', '2'], a: 0 },
+    { q: 'Второй по цене с конца ножевой кейс? (раздел «Ножевые кейсы»)', o: ['Тычковые ножи', 'Наваха', 'Кукри', 'Нож с лезвием-крюком'], a: 0 },
+    { q: 'Самый дорогой кейс из раздела «Ограниченная серия»?', o: ['Нож-смерть близко', 'Horizon-ножи из будущего', 'Donk', 'Градиент'], a: 1 },
+    { q: 'Самый дешёвый кейс из тех, которые названы именами киберспортсменов?', o: ['S1mple', 'Monesy', 'Donk', 'Kyousuke'], a: 0 },
+    { q: 'Сколько соцсетей указано на официальном сайте Кейс Баттла возле профиля?', o: ['5', '2', '4', '3'], a: 2 },
+    { q: 'Стоимость кейса «Чёрный алмаз»?', o: ['15000', '50000', '30000', '20000'], a: 3 },
+    { q: 'Сколько стоит кейс Bitcoin?', o: ['100000', '50000', '75000', '25000'], a: 0 },
+    { q: 'Как часто проводится самый частый розыгрыш?', o: ['Раз в 15 минут', 'Раз в час', 'Раз в день', 'Раз в 12 часов'], a: 1 },
+    { q: 'На сколько нужно пополнить баланс для участия в розыгрыше, который проводится раз в день?', o: ['1000', '300', '250', '500'], a: 3 },
+    { q: 'Выберите верные утверждения про установку коэффициента в быстром подборе:', o: ['Коэффициент должен быть от 1 до 99', 'Коэффициент может быть дробным', 'Коэффициент может быть больше 75', 'Ни одно из утверждений не подходит'], a: [2] },
+    { q: 'Самый дорогой кейс в разделе «Имидж-кейсы»?', o: ['Нашивки команд', 'Агенты', 'Наклейки XL-box', 'Пины'], a: 1 },
+    { q: 'Выберите верное описание к утверждениям:\nа) Кейсов в разделе «Операции» 10\nб) Кейсов «Операции» больше, чем хэллоуинских кейсов', o: ['Верно а', 'Верно б', 'Верно и а, и б', 'Ни одно не правильно'], a: 3 },
+    { q: 'Цена кейса «Оружейный кейс 1»?', o: ['199 рублей', '1499 рублей', '3499 рублей', '69 рублей'], a: 2 },
+    { q: 'Кейс за 750 баттлкоинов?', t: 'text', a: 'Турмалиновый' },
+    { q: 'Сколько всего кейсов за баттлкоины?', t: 'text', a: '10' },
+    { q: 'Сколько видов цели есть в контрактах (не считая случайную)?', t: 'text', a: '8' },
+    { q: 'Стоимость кейса «Нож-бабочка»?', t: 'text', a: '64999' },
+    { q: '15-й кейс сайта от начала?', t: 'text', a: 'Wardogs' },
+    { q: 'Стоимость кейса «Бладхаунд»?', t: 'text', a: '549' },
+    { q: 'Сколько предметов в кейсе Bitcoin?', t: 'text', a: '36' },
+    { q: 'Сколько всего кейсов в коллекции Valve CS2?', t: 'text', a: '28' }
+  ]}
 ];
 
 const app = document.getElementById('app');
-const LOGO = '<div class="logo"><svg width="36" height="36" viewBox="0 0 34 34" fill="none" aria-hidden="true"><rect x="3" y="12" width="28" height="18" rx="3" stroke="#FF8A1F" stroke-width="2.5"/><path d="M3 17h28" stroke="#FF8A1F" stroke-width="2.5"/><rect x="14" y="15" width="6" height="5" rx="1" fill="#FF8A1F"/><path d="M6 12l3-7h16l3 7" stroke="#FF8A1F" stroke-width="2.5" stroke-linejoin="round"/></svg><span>CASE<b>BATTLE</b></span></div>';
-let test, i, answers, testIdx;
+const LOGO = '<div class="logo"><svg width="36" height="36" viewBox="0 0 34 34" fill="none" aria-hidden="true"><rect x="3" y="12" width="28" height="18" rx="3" stroke="#FF8A1F" stroke-width="2.5"/><path d="M3 17h28" stroke="#FF8A1F" stroke-width="2.5"/><rect x="14" y="15" width="6" height="5" rx="1" fill="#FF8A1F"/><path d="M6 12l3-7h16l3 7" stroke="#FF8A1F" stroke-width="2.5" stroke-linejoin="round"/></svg><span>QUIZ<b>BATTLE</b>CS</span></div>';
 const RAYS = '<span class="rays" aria-hidden="true">' + [[12,0,0],[37,0,0],[63,0,0],[88,0,0],[12,100,180],[37,100,180],[63,100,180],[88,100,180],[0,30,-90],[0,70,-90],[100,30,90],[100,70,90]].map(([x, y, a]) => `<i style="left:${x}%;top:${y}%;--a:${a}deg"></i>`).join('') + '</span>';
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let test, i, answers, testIdx;
 
-function home() {
-  app.innerHTML = LOGO + '<h1>Тесты</h1>' + TESTS.map((t, k) =>
-    `<button class="test" data-k="${k}"><b>${esc(t.title)}</b><span>${t.questions.length} вопросов</span></button>`).join('');
-  app.querySelectorAll('.test').forEach(b => b.onclick = () => start(+b.dataset.k));
-}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = s => String(s).toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]/g, '');
+const pin = t => /^(Ни |Нету )/.test(t);
 
 function shuffle(arr) {
   const a = arr.slice();
@@ -102,58 +150,296 @@ function shuffle(arr) {
   return a;
 }
 
+/* Перемешивает варианты; «Ни одно…» и «Нету…» остаются в конце */
+function prep(q) {
+  if (q.t === 'text') return q;
+  const ix = q.o.map((_, n) => n);
+  const ord = shuffle(ix.filter(n => !pin(q.o[n]))).concat(ix.filter(n => pin(q.o[n])));
+  const m = n => ord.indexOf(n);
+  return { q: q.q, o: ord.map(n => q.o[n]), a: Array.isArray(q.a) ? q.a.map(m) : m(q.a) };
+}
+
+function check(q, x) {
+  if (q.t === 'text') {
+    const e = String(q.a);
+    return /^\d+$/.test(e) ? String(x).replace(/\D/g, '') === e : norm(x) === norm(e);
+  }
+  if (Array.isArray(q.a)) return x.length === q.a.length && q.a.every(n => x.includes(n));
+  return x === q.a;
+}
+
+function fmt(q, a) {
+  if (q.t === 'text') return a || '—';
+  if (Array.isArray(a)) return a.length ? a.map(n => q.o[n]).join(', ') : '—';
+  return q.o[a];
+}
+
+/* ===== СТАТИСТИКА: Telegram CloudStorage (синхронизация между устройствами) + localStorage ===== */
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor('#050505'); tg.setBackgroundColor('#050505'); } catch (e) {} }
+const SKEY = 'qbcs_stats';
+const cloud = () => !!(tg && tg.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9'));
+const blank = () => ({ tests: {} });
+const valid = s => (s && s.tests ? s : null);
+function localGet() { try { return valid(JSON.parse(localStorage.getItem(SKEY))); } catch (e) { return null; } }
+function loadStats(cb) {
+  if (cloud()) {
+    tg.CloudStorage.getItem(SKEY, (err, v) => {
+      let s = null;
+      if (!err && v) { try { s = valid(JSON.parse(v)); } catch (e) {} }
+      cb(s || localGet() || blank());
+    });
+  } else cb(localGet() || blank());
+}
+function saveStats(s) {
+  const j = JSON.stringify(s);
+  try { localStorage.setItem(SKEY, j); } catch (e) {}
+  if (cloud()) tg.CloudStorage.setItem(SKEY, j, () => {});
+}
+function record(score, total, cb) {
+  loadStats(s => {
+    const e = s.tests[test.title] || (s.tests[test.title] = { n: 0, c: 0, t: 0, b: 0, h: [] });
+    e.n++; e.c += score; e.t += total;
+    e.b = Math.max(e.b, Math.round(score / total * 100));
+    e.h.push([Date.now(), score, total]);
+    if (e.h.length > 40) e.h = e.h.slice(-40);
+    saveStats(s);
+    if (cb) cb(e.n);
+  });
+}
+
+function profile() {
+  app.innerHTML = LOGO + '<p class="verdict">Загрузка…</p>';
+  loadStats(s => {
+    const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const name = u ? [u.first_name, u.last_name].filter(Boolean).join(' ') : 'Игрок';
+    const es = Object.keys(s.tests).map(k => ({ k, e: s.tests[k] }));
+    const sum = f => es.reduce((a, x) => a + f(x.e), 0);
+    const n = sum(e => e.n), c = sum(e => e.c), t = sum(e => e.t);
+    const best = es.reduce((a, x) => Math.max(a, x.e.b), 0);
+    const pct = t ? Math.round(c / t * 100) : 0;
+    const when = ts => new Date(ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    app.innerHTML = `<div class="top"><button class="back" id="x" aria-label="Назад">←</button><h2 style="margin:0">Профиль</h2></div>
+      <p class="who">${esc(name)} · ID ${uid}</p>
+      <div class="grid">
+        <div class="stat"><b>${n}</b><span>попыток</span></div>
+        <div class="stat"><b>${c}</b><span>верных ответов</span></div>
+        <div class="stat"><b>${pct}%</b><span>общая точность</span></div>
+        <div class="stat"><b>${best}%</b><span>лучший результат</span></div>
+      </div>
+      ${es.length ? es.map(({ k, e }) => `<h2 class="sub">${esc(k)}: история попыток</h2>` + e.h.slice().reverse().slice(0, 20).map((a, idx) =>
+        `<div class="row"><span>Попытка №${e.n - idx}</span><span>${a[1]} из ${a[2]} · ${Math.round(a[1] / a[2] * 100)}%</span><small>${when(a[0])}</small></div>`).join('')).join('') : '<p class="verdict">Пока нет попыток. Пройди тест, и результаты появятся здесь.</p>'}
+      ${n ? '<button class="btn alt" id="rs">Сбросить статистику</button>' : ''}`;
+    document.getElementById('x').onclick = home;
+    const rs = document.getElementById('rs');
+    if (rs) rs.onclick = () => {
+      if (rs.dataset.s) { saveStats(blank()); profile(); }
+      else { rs.dataset.s = '1'; rs.textContent = 'Нажми ещё раз, чтобы удалить всё'; }
+    };
+  });
+}
+
+/* ===== ДУЭЛИ 1 НА 1 (Firebase Realtime Database) ===== */
+const DB_URL = 'https://quizbattlecs-default-rtdb.europe-west1.firebasedatabase.app/';
+const dbOk = () => /^https:\/\//.test(DB_URL);
+const db = (path, method, body) => fetch(DB_URL.replace(/\/$/, '') + '/' + path + '.json', {
+  method: method || 'GET', headers: { 'Content-Type': 'application/json' },
+  body: body === undefined ? undefined : JSON.stringify(body)
+}).then(r => { if (!r.ok) throw new Error('db'); return r.json(); });
+function getUid() {
+  const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (u) return String(u.id);
+  try {
+    let v = localStorage.getItem('qb_uid');
+    if (!v) { v = String(Math.floor(1e6 + Math.random() * 9e6)); localStorage.setItem('qb_uid', v); }
+    return v;
+  } catch (e) { return String(Math.floor(1e6 + Math.random() * 9e6)); }
+}
+const uid = getUid();
+const myName = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) || 'Игрок';
+let duel = null, watchT = null;
+
+function stopWatch() { if (watchT) { clearInterval(watchT); watchT = null; } }
+function watch(path, fn) {
+  stopWatch();
+  const tick = () => db(path).then(v => { if (watchT && fn(v)) stopWatch(); }).catch(() => {});
+  watchT = setInterval(tick, 1200); tick();
+}
+const head2 = t => `<div class="top"><button class="back" id="x" aria-label="Назад">←</button><h2 style="margin:0">${t}</h2></div>`;
+
+function duelMenu() {
+  stopWatch(); duel = null;
+  if (!dbOk()) {
+    app.innerHTML = head2('Дуэль 1 на 1') + '<p class="verdict" style="margin-top:20px">Дуэли пока не подключены к базе данных.</p>';
+    document.getElementById('x').onclick = home; return;
+  }
+  app.innerHTML = head2('Дуэль 1 на 1') + `<p class="who">Твой ID: <b>${uid}</b></p>
+    <button class="btn alt" id="cp" style="margin-top:0">Копировать мой ID</button>
+    <h2 class="sub" style="margin-top:24px">Создать комнату</h2>
+    <p class="hint" style="margin-top:0">Выбери число вопросов и отправь другу свой ID</p>
+    <div class="opts"><button class="opt cr" data-n="5">5 вопросов</button><button class="opt cr" data-n="7">7 вопросов</button><button class="opt cr" data-n="10">10 вопросов</button></div>
+    <h2 class="sub" style="margin-top:24px">Войти в комнату друга</h2>
+    <input class="inp" id="hid" inputmode="numeric" placeholder="ID друга">
+    <button class="btn" id="go">Войти</button><p class="hint" id="msg"></p>`;
+  document.getElementById('x').onclick = home;
+  const cp = document.getElementById('cp');
+  cp.onclick = () => { try { navigator.clipboard.writeText(uid).then(() => cp.textContent = 'Скопировано', () => cp.textContent = 'Твой ID: ' + uid); } catch (e) { cp.textContent = 'Твой ID: ' + uid; } };
+  app.querySelectorAll('.cr').forEach(b => b.onclick = () => duelCreate(+b.dataset.n));
+  document.getElementById('go').onclick = () => duelJoin(document.getElementById('hid').value.replace(/\D/g, ''));
+}
+
+function duelCreate(n) {
+  const qs = shuffle(TESTS[0].questions.map((_, k) => k)).slice(0, n);
+  const room = { host: { id: uid, name: myName }, n, qs, status: 'wait', ts: Date.now() };
+  app.innerHTML = head2('Комната создана') + `<p class="verdict" style="margin-top:20px">Отправь другу свой ID: <b>${uid}</b><br>Ждём соперника…</p>`;
+  document.getElementById('x').onclick = () => { stopWatch(); db('rooms/' + uid, 'DELETE').catch(() => {}); duelMenu(); };
+  db('rooms/' + uid, 'PUT', room)
+    .then(() => watch('rooms/' + uid, v => { if (v && v.guest) { duelStart(v); return true; } return false; }))
+    .catch(() => { app.innerHTML = head2('Нет связи') + '<p class="verdict" style="margin-top:20px">Не удалось подключиться к базе. Проверь интернет.</p>'; document.getElementById('x').onclick = duelMenu; });
+}
+
+function duelJoin(hid) {
+  const msg = document.getElementById('msg');
+  if (!hid) { msg.textContent = 'Введи ID друга'; return; }
+  if (hid === uid) { msg.textContent = 'Это твой собственный ID'; return; }
+  msg.textContent = 'Ищем комнату…';
+  db('rooms/' + hid).then(r => {
+    if (!r || r.status !== 'wait' || r.guest || Date.now() - r.ts > 3600000) { msg.textContent = 'Комната не найдена или уже занята'; return; }
+    const g = { id: uid, name: myName };
+    return db('rooms/' + hid, 'PATCH', { guest: g, status: 'play' }).then(() => { r.guest = g; duelStart(r); });
+  }).catch(() => { msg.textContent = 'Нет связи с базой'; });
+}
+
+function duelStart(room) {
+  stopWatch();
+  const host = room.host.id === uid;
+  duel = { host: room.host.id, opp: host ? room.guest : room.host, t0: Date.now() };
+  const base = TESTS[0].questions;
+  test = { title: 'Дуэль', questions: Object.values(room.qs).map(k => prep(base[k])) };
+  i = 0; answers = []; ask();
+}
+
+function duelEnd() {
+  const qs = test.questions, s = qs.filter((q, n) => check(q, answers[n])).length, t = Date.now() - duel.t0;
+  duel.me = { s, t };
+  app.innerHTML = head2('Готово') + '<p class="verdict" style="margin-top:20px">Ждём, пока соперник закончит…</p>';
+  document.getElementById('x').onclick = home;
+  db('rooms/' + duel.host + '/res/' + uid, 'PUT', { s, t }).catch(() => {});
+  watch('rooms/' + duel.host, r => {
+    const o = r && r.res && r.res[duel.opp.id];
+    if (!o) return false;
+    duelResult(o); return true;
+  });
+}
+
+function duelResult(o) {
+  const me = duel.me, sec = ms => (ms / 1000).toFixed(1) + ' с';
+  const win = me.s !== o.s ? me.s > o.s : (me.t !== o.t ? me.t < o.t : null);
+  const byTime = me.s === o.s && win !== null;
+  app.innerHTML = LOGO + `<div class="big" style="font-size:36px">${win === null ? 'Ничья' : win ? 'Победа!' : 'Поражение'}</div>
+    <p class="verdict">${byTime ? 'Счёт равный, победитель определён по времени' : ''}</p>
+    <div class="grid"><div class="stat"><b>${me.s}</b><span>ты · ${sec(me.t)}</span></div><div class="stat"><b>${o.s}</b><span>${esc(duel.opp.name)} · ${sec(o.t)}</span></div></div>
+    <button class="btn" id="again">В меню дуэлей</button><button class="btn alt" id="all">На главную</button>`;
+  document.getElementById('again').onclick = duelMenu;
+  document.getElementById('all').onclick = home;
+}
+
+function home() {
+  duel = null; stopWatch();
+  app.innerHTML = '<div class="head">' + LOGO + '<button class="prof" id="pf">Профиль</button></div><h1>Тесты</h1>' + TESTS.map((t, k) =>
+    `<button class="test" data-k="${k}"><b>${esc(t.title)}</b><span>${t.questions.length} вопросов</span></button>`).join('') + '<button class="test" id="dl" style="margin-top:80px"><b>Дуэль 1 на 1</b><span>с другом</span></button>';
+  app.querySelectorAll('.test[data-k]').forEach(b => b.onclick = () => start(+b.dataset.k));
+  document.getElementById('pf').onclick = profile;
+  document.getElementById('dl').onclick = duelMenu;
+}
+
 function start(k) {
   testIdx = k;
-  test = Object.assign({}, TESTS[k], { questions: shuffle(TESTS[k].questions).map(q => {
-    const idx = shuffle(q.o.map((_, n) => n));
-    return { q: q.q, o: idx.map(n => q.o[n]), a: idx.indexOf(q.a) };
-  }) });
+  test = { title: TESTS[k].title, questions: shuffle(TESTS[k].questions).map(prep) };
   i = 0; answers = []; ask();
 }
 
 function slots() {
   return test.questions.map((q, n) => {
-    const c = n < answers.length ? (answers[n] === q.a ? 'ok' : 'bad') : (n === i ? 'cur' : '');
+    const c = n < answers.length ? (check(q, answers[n]) ? 'ok' : 'bad') : (n === i ? 'cur' : '');
     return `<i class="${c}"></i>`;
   }).join('');
 }
 
 function ask() {
   const q = test.questions[i], last = i === test.questions.length - 1;
+  const text = q.t === 'text', multi = Array.isArray(q.a);
+  const body = text
+    ? '<input class="inp" id="in" type="text" autocomplete="off" placeholder="Введи ответ"><div id="fb"></div>'
+    : '<div class="opts">' + q.o.map((t, n) => `<button class="opt" data-n="${n}">${esc(t)}</button>`).join('') + '</div>';
   app.innerHTML = `<div class="top"><button class="back" id="x" aria-label="К списку тестов">←</button><div class="slots" id="sl">${slots()}</div></div>
-    <h2>${esc(q.q)}</h2>
-    <div class="opts">${q.o.map((t, n) => `<button class="opt" data-n="${n}">${esc(t)}</button>`).join('')}</div>
+    <h2>${esc(q.q)}</h2>${multi ? '<p class="hint">Можно выбрать несколько ответов</p>' : ''}${body}
+    <button class="next" id="ok" ${multi || text ? '' : 'hidden'}>Ответить</button>
     <button class="next" id="nx" hidden>${last ? 'Результат' : 'Дальше'}</button>`;
-  document.getElementById('x').onclick = home;
-  const opts = [...app.querySelectorAll('.opt')];
-  opts.forEach(b => b.onclick = () => {
-    const n = +b.dataset.n;
-    answers.push(n);
-    opts.forEach((o, m) => { o.disabled = true; if (m === q.a) o.classList.add('ok'); });
-    if (n !== q.a) b.classList.add('bad');
-    else { b.classList.add('hit'); b.insertAdjacentHTML('beforeend', RAYS); }
+  document.getElementById('x').onclick = duel ? () => { duel = null; duelMenu(); } : home;
+  const ok = document.getElementById('ok'), nx = document.getElementById('nx');
+
+  const fin = x => {
+    answers.push(x);
     document.getElementById('sl').innerHTML = slots();
-    const nx = document.getElementById('nx');
-    nx.hidden = false;
-    nx.onclick = () => { if (last) result(); else { i++; ask(); window.scrollTo(0, 0); } };
+    ok.hidden = true; nx.hidden = false;
+    nx.onclick = () => { if (last) (duel ? duelEnd() : result()); else { i++; ask(); window.scrollTo(0, 0); } };
+    return check(q, x);
+  };
+
+  if (text) {
+    const inp = document.getElementById('in');
+    ok.onclick = () => {
+      const v = inp.value.trim();
+      if (!v) return;
+      inp.disabled = true;
+      const good = fin(v), fb = document.getElementById('fb');
+      fb.innerHTML = `<div class="opt ${good ? 'ok hit' : 'bad'}">${good ? 'Верно!' : 'Неверно. Верный ответ: ' + esc(q.a)}</div>`;
+      if (good) fb.firstChild.insertAdjacentHTML('beforeend', RAYS);
+    };
+    inp.onkeydown = e => { if (e.key === 'Enter') ok.click(); };
+    return;
+  }
+
+  const opts = [...app.querySelectorAll('.opt')];
+  if (multi) {
+    opts.forEach(b => b.onclick = () => b.classList.toggle('sel'));
+    ok.onclick = () => {
+      const sel = opts.filter(o => o.classList.contains('sel')).map(o => +o.dataset.n);
+      if (!sel.length) return;
+      const good = fin(sel);
+      opts.forEach((o, m) => {
+        const c = q.a.includes(m), s = sel.includes(m);
+        o.disabled = true; o.classList.remove('sel');
+        if (c) o.classList.add('ok'); else if (s) o.classList.add('bad');
+        if (good && c) { o.classList.add('hit'); o.insertAdjacentHTML('beforeend', RAYS); }
+      });
+    };
+    return;
+  }
+  opts.forEach(b => b.onclick = () => {
+    const n = +b.dataset.n, good = fin(n);
+    opts.forEach((o, m) => { o.disabled = true; if (m === q.a) o.classList.add('ok'); });
+    if (!good) b.classList.add('bad');
+    else { b.classList.add('hit'); b.insertAdjacentHTML('beforeend', RAYS); }
   });
 }
 
 function result() {
-  const qs = test.questions;
-  const score = qs.filter((q, n) => answers[n] === q.a).length;
-  const pct = score / qs.length;
+  const qs = test.questions, good = qs.map((q, n) => check(q, answers[n]));
+  const score = good.filter(Boolean).length, pct = score / qs.length;
   const verdict = pct >= 0.8 ? 'Отличный результат' : pct >= 0.5 ? 'Неплохо, можно лучше' : 'Есть куда расти';
-  const misses = qs.map((q, n) => ({ q, n })).filter(({ q, n }) => answers[n] !== q.a);
+  const misses = qs.map((q, n) => ({ q, n })).filter(({ n }) => !good[n]);
   app.innerHTML = LOGO + `<h1>${esc(test.title)}</h1>
     <div class="big">${score} из ${qs.length}</div>
-    <p class="verdict">${verdict}</p>
+    <p class="verdict">${verdict}<br><span id="att"></span></p>
     ${misses.length ? '<h2 style="font-size:16px;margin:0 0 12px">Ошибки</h2>' : ''}
     ${misses.map(({ q, n }) => `<div class="miss"><p><b>${esc(q.q)}</b></p>
-      <p class="w">Твой ответ: ${esc(q.o[answers[n]])}</p><p class="r">Верно: ${esc(q.o[q.a])}</p></div>`).join('')}
+      <p class="w">Твой ответ: ${esc(fmt(q, answers[n]))}</p><p class="r">Верно: ${esc(fmt(q, q.a))}</p></div>`).join('')}
     <button class="btn" id="again">Пройти заново</button>
     <button class="btn alt" id="all">К списку тестов</button>`;
   document.getElementById('again').onclick = () => start(testIdx);
+  record(score, qs.length, n => { const el = document.getElementById('att'); if (el) el.textContent = 'Попытка №' + n; });
   document.getElementById('all').onclick = home;
   window.scrollTo(0, 0);
 }
