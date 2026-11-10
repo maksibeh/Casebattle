@@ -67,12 +67,13 @@ button:focus-visible,.inp:focus-visible{outline:3px solid var(--acc);outline-off
 .row small{width:100%;color:var(--mute)}
 .coins{display:flex;align-items:center;gap:7px;border:2px solid var(--line);background:var(--card);border-radius:20px;padding:5px 14px 5px 8px;font-weight:700;margin-top:6px}
 .coins img{width:24px;height:24px;display:block}
-.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:0 16px calc(12px + env(safe-area-inset-bottom,0px));pointer-events:none}
-.bar{pointer-events:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:6px;width:100%;max-width:400px;background:rgba(20,20,26,.94);border:1px solid #2E2E38;border-radius:26px;padding:8px 12px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,.65)}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;color:#8C8C99;font-size:12px;font-weight:700;padding:8px 0;border-radius:16px}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:0 10px calc(12px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.bar{pointer-events:auto;display:grid;grid-template-columns:1fr 1fr 88px 1fr 1fr;align-items:end;gap:0;width:100%;max-width:400px;background:rgba(20,20,26,.94);border:1px solid #2E2E38;border-radius:26px;padding:8px 6px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,.65)}
+.tab{justify-self:center;width:calc(100% - 4px);max-width:72px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;color:#8C8C99;font-size:11px;font-weight:700;padding:8px 0;border-radius:16px}
 .tab.on{color:#fff;background:rgba(255,255,255,.12)}
-.tab.main{flex:0 0 100px;height:70px;margin-top:-28px;justify-content:center;color:#0A0A0A;font-size:13px;background:linear-gradient(180deg,#FFFFFF,#E4E4EA);box-shadow:0 6px 20px rgba(255,255,255,.22);border-radius:22px}
+.tab.main{grid-column:3;width:88px;max-width:88px;height:70px;margin-top:-28px;justify-content:center;color:#0A0A0A;font-size:13px;background:linear-gradient(180deg,#FFFFFF,#E4E4EA);box-shadow:0 6px 20px rgba(255,255,255,.22);border-radius:22px}
 .tab.main svg{width:28px;height:28px}
+.tab[data-t=p]{grid-column:4/6}
 .tab.main.on{box-shadow:0 0 0 3px #050505,0 6px 26px rgba(255,255,255,.5)}
 .test:disabled{opacity:.55;cursor:default;border-color:var(--dim)}
 .chips{display:flex;gap:8px;margin:-6px 0 16px;flex-wrap:wrap}
@@ -83,6 +84,15 @@ button:focus-visible,.inp:focus-visible{outline:3px solid var(--acc);outline-off
 .tt span{color:var(--mute);font-size:14px}
 .claim{border:2px solid var(--line);background:var(--acc);color:#0A0A0A;font-weight:700;border-radius:10px;padding:8px 12px;white-space:nowrap}
 .claim.off,.claim.got{background:transparent;color:var(--mute);border-color:var(--dim)}
+.lb{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--dim);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.lb.me{border-color:var(--line)}
+.pl{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;background:var(--dim);flex:none}
+.pl.p1{background:#FFD21E;color:#0A0A0A}
+.pl.p2{background:#C9CCD6;color:#0A0A0A}
+.pl.p3{background:#D9884A;color:#0A0A0A}
+.nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cn{display:flex;align-items:center;gap:6px;font-weight:700}
+.cn img{width:20px;height:20px}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}.opt.hit{animation:none;box-shadow:0 0 18px 2px rgba(74,222,128,.45)}.opt.bad{animation:none;box-shadow:0 0 16px 2px rgba(255,107,107,.55)}.rays{display:none}}
 </style>
@@ -219,6 +229,7 @@ function saveStats(s) {
   const j = JSON.stringify(s);
   try { localStorage.setItem(SKEY, j); } catch (e) {}
   if (cloud()) tg.CloudStorage.setItem(SKEY, j, () => {});
+  lbPublish(s.coins);
 }
 function record(score, total, cb) {
   loadStats(s => {
@@ -389,14 +400,15 @@ const ic = d => '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" str
 const ICONS = {
   q: ic('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12l2 2 4-4"/>'),
   h: ic('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/>'),
-  p: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/>')
+  p: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/>'),
+  l: ic('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>')
 };
 function navHtml(on) {
   const t = (id, label, cls) => `<button class="tab${cls || ''}${on === id ? ' on' : ''}" data-t="${id}">${ICONS[id]}<span>${label}</span></button>`;
-  return `<nav class="tabs"><div class="bar">${t('q', 'Задания')}${t('h', 'Тесты', ' main')}${t('p', 'Профиль')}</div></nav><div style="height:110px"></div>`;
+  return `<nav class="tabs"><div class="bar">${t('l', 'Рейтинг')}${t('q', 'Задания')}${t('h', 'Тесты', ' main')}${t('p', 'Профиль')}</div></nav><div style="height:110px"></div>`;
 }
 function wireNav() {
-  app.querySelectorAll('.tab').forEach(b => b.onclick = () => { const t = b.dataset.t; if (t === 'p') profile(); else if (t === 'q') tasks(); else home(); });
+  app.querySelectorAll('.tab').forEach(b => b.onclick = () => { const t = b.dataset.t; if (t === 'p') profile(); else if (t === 'q') tasks(); else if (t === 'l') leaderboard(); else home(); });
 }
 const TASKS = [
   { id: 'c10', t: 'Ответь верно на 10 вопросов', k: 'correct', n: 10, r: 5 },
@@ -421,6 +433,37 @@ function tasks() {
       });
     });
     wireNav();
+  });
+}
+
+/* ===== РЕЙТИНГ ПО МОНЕТАМ (Firebase: leaders/<id>) ===== */
+function lbPublish(coins) {
+  if (!dbOk()) return Promise.resolve();
+  return db('leaders/' + uid, 'PUT', { n: myName, c: coins, t: Date.now() }).catch(() => {});
+}
+function lbLoad() {
+  const base = DB_URL.replace(/\/$/, '') + '/leaders.json';
+  const get = u => fetch(u).then(r => { if (!r.ok) throw new Error('lb'); return r.json(); });
+  return get(base + '?orderBy=%22c%22&limitToLast=30').catch(() => get(base)).then(v => {
+    const arr = Object.keys(v || {}).map(k => ({ id: k, n: (v[k] && v[k].n) || 'Игрок', c: (v[k] && v[k].c) || 0 }));
+    arr.sort((a, b) => b.c - a.c);
+    return arr.slice(0, 30);
+  });
+}
+function leaderboard() {
+  stopWatch(); duel = null;
+  loadStats(s => {
+    const draw = body => {
+      app.innerHTML = headHtml(s) + '<h1>Рейтинг</h1><p class="hint" style="margin-top:-8px">Топ игроков по монетам</p>' + body + navHtml('l');
+      wireNav();
+    };
+    if (!dbOk()) { draw('<p class="verdict">Рейтинг пока не подключён.</p>'); return; }
+    draw('<p class="verdict">Загрузка…</p>');
+    lbPublish(s.coins).then(lbLoad).then(list => {
+      const rows = list.map((p, i) => `<div class="lb${p.id === uid ? ' me' : ''}"><span class="pl p${i < 3 ? i + 1 : 0}">${i + 1}</span><span class="nm">${esc(p.n)}</span><span class="cn"><img src="${COIN}" alt="">${p.c}</span></div>`).join('');
+      const out = list.some(p => p.id === uid) ? '' : `<p class="hint">Ты пока не в топе. Твои монеты: ${s.coins}</p>`;
+      draw(rows + out);
+    }).catch(() => draw('<p class="verdict">Не удалось загрузить рейтинг. Проверь интернет.</p>'));
   });
 }
 
